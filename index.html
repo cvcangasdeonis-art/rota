@@ -58,4 +58,102 @@ code{background:#0a1117;padding:.1rem .3rem;border-radius:.3rem;border:1px solid
 </head>
 <body>
 <header class="site-header">
-  <div class=
+  <div class="container header-grid">
+    <h1>Hoja Oficial · QR</h1>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card">
+    <form id="meta" class="meta-grid" onsubmit="return false;">
+      <label>Código equipo
+        <input type="text" id="equipo" placeholder="CANGAS" required>
+      </label>
+      <fieldset class="side">
+        <legend>Equipo</legend>
+        <label><input type="radio" name="side" value="A" checked> A</label>
+        <label><input type="radio" name="side" value="B"> B</label>
+      </fieldset>
+      <label>Set
+        <select id="set">
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select>
+      </label>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Posiciones I – VI</h2>
+    <div class="pos-grid">
+      <label>I<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p1"></label>
+      <label>II<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p2"></label>
+      <label>III<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p3"></label>
+      <label>IV<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p4"></label>
+      <label>V<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p5"></label>
+      <label>VI<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p6"></label>
+    </div>
+    <div class="row">
+      <button id="rot-mas" class="btn">Rotar (+)</button>
+      <button id="rot-menos" class="btn">Rotar (–)</button>
+      <button id="btn-generar" class="btn btn-primary">Generar QR</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>QR y Payload</h2>
+    <div id="qr"></div>
+    <label>Cadena generada
+      <textarea id="payload" rows="6" readonly></textarea>
+    </label>
+    <div class="row">
+      <button id="btn-png" class="btn">Descargar PNG</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <p>© <span id="year"></span> Hoja Oficial QR</p>
+  </div>
+</footer>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const yearEl=$('#year'); if(yearEl) yearEl.textContent=new Date().getFullYear();
+function getSide(){return document.querySelector('input[name="side"]:checked').value;}
+function getPositions(){
+  const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value].map(x=>x.trim());
+  const set=new Set(v.filter(x=>x!==''));
+  if(set.size!==v.filter(x=>x!=='').length) throw new Error('No puedes repetir dorsales.');
+  if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.'); return v;
+}
+function setPositions(vals){[$('#p1'),$('#p2'),$('#p3'),$('#p4'),$('#p5'),$('#p6')].forEach((el,i)=>el.value=vals[i]??'');}
+function rotatePlus(){const v=getPositions(); setPositions([v[5],v[0],v[1],v[2],v[3],v[4]]);}
+function rotateMinus(){const v=getPositions(); setPositions([v[1],v[2],v[3],v[4],v[5],v[0]]);}
+function buildPayload(){
+  const equipo=$('#equipo').value.trim(); if(!equipo) throw new Error('Introduce el código de equipo.');
+  const side=getSide(); const set=$('#set').value; const v=getPositions();
+  const zones={ZN1:v[0],ZN2:v[1],ZN3:v[2],ZN4:v[3],ZN5:v[4],ZN6:v[5]};
+  return JSON.stringify([equipo,side,JSON.stringify(zones),set]);
+}
+function renderQR(text){
+  const el=$('#qr'); el.innerHTML=''; const canvas=document.createElement('canvas');
+  QRCode.toCanvas(canvas,text,{width:256,margin:1},e=>{if(e)console.error(e)}); el.appendChild(canvas);
+}
+function generate(){ try{const payload=buildPayload(); $('#payload').value=payload; renderQR(payload);}catch(e){alert(e.message);} }
+function downloadPNG(){
+  const canvas=$('#qr canvas');
+  if(!canvas){alert('Genera el QR primero.'); return;}
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download='hoja-oficial-qr.png';
+  a.click();
+}
+$('#rot-mas').addEventListener('click',e=>{e.preventDefault(); try{rotatePlus();}catch(err){alert(err.message);}}); 
+$('#rot-menos').addEventListener('click',e=>{e.preventDefault(); try{rotateMinus();}catch(err){alert(err.message);}}); 
+$('#btn-generar').addEventListener('click',e=>{e.preventDefault(); generate();});
+$('#btn-png').addEventListener('click',e=>{e.preventDefault(); downloadPNG();});
+</script>
+</body>
+</html>
