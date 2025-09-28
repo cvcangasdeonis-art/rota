@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoja Oficial · QR Lineup</title>
+<meta name="theme-color" content="#22c55e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f14; --surface:#0d141b; --line:#14202b; --text:#e5e7eb; --muted:#9aa6b2;
+  --accent:#22c55e; --accent-2:#10b981;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:var(--text);line-height:1.6}
+.container{max-width:420px;margin:0 auto;padding:0.5rem}
+h1,h2{margin:.2rem 0 .6rem} .muted{color:var(--muted)} .small{font-size:.9rem}
+.site-header{position:sticky;top:0;background:var(--accent);border-bottom:none}
+.header-grid{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0}
+.accent{color:#001b12}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#0e1620;color:var(--text);padding:.8rem;border-radius:.8rem;cursor:pointer;width:100%}
+.btn.small{padding:.6rem} .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:#001b12;font-weight:800}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:1rem;padding:1rem;margin:1rem 0;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.meta-grid{display:grid;grid-template-columns:1fr;gap:.8rem}
+.meta-grid input, .meta-grid select{padding:.8rem;border:1px solid var(--line);border-radius:.6rem;background:#0a1117;color:var(--text)}
+.side{display:flex;gap:1rem;border:1px dashed var(--line);padding:.6rem .8rem;border-radius:.6rem}
+.set-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem}
+.tab{border:1px dashed var(--line);background:#0a1117;border-radius:.6rem;padding:.6rem;cursor:pointer;color:var(--text)}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:.6rem 0}
+.pos-grid label{display:flex;flex-direction:column;font-size:.9rem}
+.pos-grid input{padding:1rem;border:1px solid var(--line);border-radius:.8rem;background:#0a1117;color:var(--text);text-align:center;font-weight:800;font-size:1.3rem}
+.row{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+.qr-row{display:grid;grid-template-columns:1fr;gap:1rem;align-items:start}
+#qr{width:260px;height:260px;background:#0a1117;border:1px dashed var(--line);display:grid;place-items:center;border-radius:.6rem;margin:0 auto}
+.payload textarea{width:100%;padding:.8rem;border:1px solid var(--line);border-radius:.8rem;background:#0a1117;color:var(--text)}
+.site-footer{padding:1rem 0;border-top:1px solid var(--line)} .footer-grid{display:flex;align-items:center;justify-content:space-between}
+code{background:#0a1117;padding:.1rem .3rem;border-radius:.3rem;border:1px solid var(--line)}
+</style>
+<!-- Librería QR + fallback -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+if(!window.QRCode){var s=document.createElement('script');s.src='https://unpkg.com/qrcode/build/qrcode.min.js';document.head.appendChild(s);}
+</script>
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-grid">
+    <h1>Hoja <span class="accent">Oficial</span> · QR</h1>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card">
+    <form id="meta" class="meta-grid" onsubmit="return false;">
+      <label>Código equipo
+        <input type="text" id="equipo" placeholder="CANGAS" required>
+      </label>
+      <fieldset class="side">
+        <legend>Equipo</legend>
+        <label><input type="radio" name="side" value="A" checked> A</label>
+        <label><input type="radio" name="side" value="B"> B</label>
+      </fieldset>
+      <label>Set
+        <select id="set">
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select>
+      </label>
+      <div class="set-tabs" aria-label="Sets guardados">
+        <button class="tab" data-set="1">SET 1</button>
+        <button class="tab" data-set="2">SET 2</button>
+        <button class="tab" data-set="3">SET 3</button>
+        <button class="tab" data-set="4">SET 4</button>
+        <button class="tab" data-set="5">SET 5</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Posiciones I – VI</h2>
+    <p class="muted small">Introduce dorsales o códigos (no se permite repetir).</p>
+    <div class="pos-grid">
+      <label>I<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p1"></label>
+      <label>II<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p2"></label>
+      <label>III<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p3"></label>
+      <label>IV<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p4"></label>
+      <label>V<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p5"></label>
+      <label>VI<input inputmode="numeric" pattern="\\d*" maxlength="3" id="p6"></label>
+    </div>
+    <div class="row">
+      <button id="rot-mas" class="btn">Rotar (+)</button>
+      <button id="rot-menos" class="btn">Rotar (–)</button>
+      <button id="btn-generar" class="btn btn-primary">Generar QR</button>
+      <button id="btn-guardar" class="btn">Guardar set</button>
+      <button id="btn-cargar" class="btn">Cargar set</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>QR y Payload</h2>
+    <div class="qr-row">
+      <div id="qr"></div>
+      <div class="payload">
+        <label>Cadena generada
+          <textarea id="payload" rows="6" readonly></textarea>
+        </label>
+        <div class="row">
+          <button id="btn-copiar" class="btn">Copiar</button>
+          <button id="btn-png" class="btn">Descargar PNG</button>
+        </div>
+        <p class="muted small">Formato: <code>["CODIGO","A|B","{&quot;ZN1&quot;:&quot;...&quot;,...}","SET"]</code></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <p>© <span id="year"></span> Hoja Oficial QR</p>
+  </div>
+</footer>
+
+<script>
+// ===== Lógica =====
+const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const yearEl=$('#year'); if(yearEl) yearEl.textContent=new Date().getFullYear();
+function getSide(){const r=document.querySelector('input[name="side"]:checked'); return r?r.value:'A';}
+function getPositions(){
+  const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value].map(x=>x.trim());
+  const set=new Set(v.filter(x=>x!=='')); if(set.size!==v.filter(x=>x!=='').length) throw new Error('No puedes repetir dorsales.');
+  if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.'); return v;
+}
+function setPositions(vals){[$('#p1'),$('#p2'),$('#p3'),$('#p4'),$('#p5'),$('#p6')].forEach((el,i)=>el.value=vals[i]??'');}
+function rotatePlus(){const v=getPositions(); setPositions([v[5],v[0],v[1],v[2],v[3],v[4]]);}
+function rotateMinus(){const v=getPositions(); setPositions([v[1],v[2],v[3],v[4],v[5],v[0]]);}
+function buildPayload(){
+  const equipo=$('#equipo').value.trim(); if(!equipo) throw new Error('Introduce el código de equipo.');
+  const side=getSide(); const set=$('#set').value; const v=getPositions();
+  const zones={ZN1:v[0],ZN2:v[1],ZN3:v[2],ZN4:v[3],ZN5:v[4],ZN6:v[5]};
+  const zonesStr=JSON.stringify(zones); const arr=[equipo,side,zonesStr,set]; return JSON.stringify(arr);
+}
+function renderQR(text){
+  const el=$('#qr'); el.innerHTML=''; const canvas=document.createElement('canvas');
+  function draw(){ if(!window.QRCode){return setTimeout(draw,100);} QRCode.toCanvas(canvas,text,{width:256,margin:1},e=>{if(e)console.error(e)}); el.appendChild(canvas); }
+  draw();
+}
+function generate(){ try{ const payload=buildPayload(); $('#payload').value=payload; renderQR(payload);}catch(e){alert(e.message);} }
+function copyPayload(){ const t=$('#payload'); t.select(); t.setSelectionRange(0,99999); document.execCommand('copy'); }
+function downloadPNG(){ const c=$('#qr canvas'); if(!c){alert('Genera el QR primero.'); return;} const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='hoja-oficial-qr.png'; document.body.appendChild(a); a.click(); a.remove(); }
+function keyFor(s){return 'hojaOficialQR:set:'+s;}
+function saveSet(){ const s=$('#set').value, eq=$('#equipo').value.trim(), side=getSide(); const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value]; localStorage.setItem(keyFor(s), JSON.stringify({equipo:eq, side, vals:v})); alert('Set guardado.'); }
+function loadSet(){ const s=$('#set').value, raw=localStorage.getItem(keyFor(s)); if(!raw){alert('No hay datos guardados para este set.'); return;} try{ const d=JSON.parse(raw); $('#equipo').value=d.equipo||''; $$('input[name="side"]').forEach(r=>r.checked=(r.value===(d.side||'A'))); setPositions(d.vals||['','','','','','']); }catch(e){alert('Datos corruptos.');} }
+$$('.tab').forEach(b=>b.addEventListener('click',e=>{e.preventDefault(); $('#set').value=b.dataset.set; loadSet();}));
+$('#rot-mas').addEventListener('click',e=>{e.preventDefault(); try{rotatePlus();}catch(err){alert(err.message);}});
+$('#rot-menos').addEventListener('click',e=>{e.preventDefault(); try{rotateMinus();}catch(err){alert(err.message);}});
+$('#btn-generar').addEventListener('click',e=>{e.preventDefault(); generate();});
+$('#btn-copiar').addEventListener('click',e=>{e.preventDefault(); copyPayload();});
+$('#btn-png').addEventListener('click',e=>{e.preventDefault(); downloadPNG();});
+$('#btn-guardar').addEventListener('click',e=>{e.preventDefault(); saveSet();});
+$('#btn-cargar').addEventListener('click',e=>{e.preventDefault(); loadSet();});
+</script>
+</body>
+</html>
