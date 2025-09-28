@@ -22,14 +22,22 @@
 body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:var(--text);line-height:1.6}
 .container{width:100%;max-width:520px;margin:0 auto;padding:0.75rem}
 h1,h2{margin:.2rem 0 .6rem} .muted{color:var(--muted)} .small{font-size:.9rem}
+
+/* Header (logo + título) */
 .site-header{position:sticky;top:0;background:var(--surface);border-bottom:1px solid rgba(255,255,255,.1)}
 .header-grid{display:flex;align-items:center;gap:.75rem;justify-content:center;padding:.6rem 0}
 .site-header img{height:40px;width:auto}
 .site-header h1{color:#ffffff;font-weight:800;font-size:1.1rem;margin:0}
+
+/* Tarjetas */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:1rem;padding:1rem;margin:1rem 0;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+
+/* Meta */
 .meta-grid{display:grid;grid-template-columns:1fr;gap:.8rem}
 .meta-grid input, .meta-grid select{padding:.8rem;border:1px solid var(--line);border-radius:.6rem;background:#0a1117;color:var(--text)}
 .side{display:flex;gap:1rem;border:1px dashed var(--line);padding:.6rem .8rem;border-radius:.6rem}
+
+/* Posiciones en vertical */
 .pos-grid{display:flex;flex-direction:column;gap:.8rem;margin:1rem 0}
 .pos-grid label{display:flex;justify-content:space-between;align-items:center;font-size:1rem}
 .pos-grid input{
@@ -43,23 +51,28 @@ h1,h2{margin:.2rem 0 .6rem} .muted{color:var(--muted)} .small{font-size:.9rem}
   color:#1e3a8a;
   font-weight:800;
 }
+
+/* Botones */
 .btn{border:none;background:#0e1620;color:var(--text);padding:.9rem;border-radius:.8rem;cursor:pointer;width:100%}
 .btn.small{padding:.6rem}
 .btn-primary{background:var(--accent);color:#1e3a8a;font-weight:800}
 .row{display:flex;flex-direction:column;gap:.6rem;margin-top:.6rem}
+
+/* QR y payload */
 #qr{width:280px;min-height:280px;background:#0a1117;border:1px dashed var(--line);display:grid;place-items:center;border-radius:.6rem;margin:0 auto;padding:.5rem}
 .payload textarea{width:100%;padding:.8rem;border:1px solid var(--line);border-radius:.8rem;background:#0a1117;color:var(--text)}
+
+/* Footer */
 .site-footer{padding:1rem 0;border-top:1px solid var(--line)} .footer-grid{display:flex;align-items:center;justify-content:space-between}
 code{background:#0a1117;padding:.1rem .3rem;border-radius:.3rem;border:1px solid var(--line)}
 </style>
 
 <!-- CDN principal de la librería QR -->
 <script id="qrcode-cdn-1" src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
-<!-- CDN de respaldo: se inyecta si el primero falla -->
+<!-- CDN de respaldo -->
 <script>
 window.__qrReady = false;
 window.addEventListener('load', function(){
-  // Si tras un breve tiempo no existe window.QRCode, cargamos un segundo CDN
   setTimeout(function(){
     if(!window.QRCode){
       var s = document.createElement('script');
@@ -77,8 +90,8 @@ window.addEventListener('load', function(){
 <body>
 <header class="site-header">
   <div class="container header-grid">
-    <!-- Sube tu logo a assets/img/logo.png o cambia la ruta -->
-    <img src="assets/img/logo.png" alt="Logo del club" onerror="this.style.display='none'">
+    <!-- Imagen en la raíz del repo -->
+    <img src="dani.png" alt="Logo del club">
     <h1>Hoja Oficial · QR</h1>
   </div>
 </header>
@@ -139,37 +152,42 @@ window.addEventListener('load', function(){
 </footer>
 
 <script>
-/* Utilidad DOM */
-const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const $=(s,r=document)=>r.querySelector(s);
 const yearEl=$('#year'); if(yearEl) yearEl.textContent=new Date().getFullYear();
 
-/* Lectura de campos */
 function getSide(){return document.querySelector('input[name="side"]:checked').value;}
 function getPositions(){
   const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value].map(x=>x.trim());
   const set=new Set(v.filter(x=>x!==''));
   if(set.size!==v.filter(x=>x!=='').length) throw new Error('No puedes repetir dorsales.');
-  if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.'); 
+  if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.');
   return v;
 }
 function setPositions(vals){[$('#p1'),$('#p2'),$('#p3'),$('#p4'),$('#p5'),$('#p6')].forEach((el,i)=>el.value=vals[i]??'');}
 
-/* Rotaciones */
-function rotatePlus(){const v=getPositions(); setPositions([v[5],v[0],v[1],v[2],v[3],v[4]]);}
-function rotateMinus(){const v=getPositions(); setPositions([v[1],v[2],v[3],v[4],v[5],v[0]]);}
+/* Rotaciones corregidas */
+function rotatePlus(){
+  const v=getPositions();
+  setPositions([v[1], v[2], v[3], v[4], v[5], v[0]]);
+}
+function rotateMinus(){
+  const v=getPositions();
+  setPositions([v[5], v[0], v[1], v[2], v[3], v[4]]);
+}
 
-/* Payload con el formato oficial que me diste */
+/* Payload */
 function buildPayload(){
-  const equipo=$('#equipo').value.trim(); if(!equipo) throw new Error('Introduce el código de equipo.');
-  const side=getSide(); const set=$('#set').value; const v=getPositions();
+  const equipo=$('#equipo').value.trim();
+  if(!equipo) throw new Error('Introduce el código de equipo.');
+  const side=getSide(); const set=document.querySelector('#set').value;
+  const v=getPositions();
   const zones={ZN1:v[0],ZN2:v[1],ZN3:v[2],ZN4:v[3],ZN5:v[4],ZN6:v[5]};
   return JSON.stringify([equipo,side,JSON.stringify(zones),set]);
 }
 
-/* Generación QR robusta (con fallback) */
+/* Generar QR */
 function renderQR(text){
-  const el=$('#qr'); el.innerHTML='';
-  // Si la librería QRCode (con Q mayúscula) está disponible, usamos canvas
+  const el=document.querySelector('#qr'); el.innerHTML='';
   function drawWithLib(){
     const canvas=document.createElement('canvas');
     try{
@@ -177,19 +195,14 @@ function renderQR(text){
         if(e){ console.error(e); drawFallback(); }
       });
       el.appendChild(canvas);
-    }catch(err){
-      console.warn('Fallo usando QRCode lib, uso fallback IMG', err);
-      drawFallback();
-    }
+    }catch(err){ drawFallback(); }
   }
-  // Fallback universal: imagen desde servicio público (sin libs)
   function drawFallback(){
     const img=document.createElement('img');
     img.alt='QR'; img.width=280; img.height=280;
     img.src='https://api.qrserver.com/v1/create-qr-code/?size=280x280&data='+encodeURIComponent(text);
     el.appendChild(img);
   }
-  // Espera breve a que la librería esté lista; si no, fallback
   let tries=0;
   (function waitForLib(){
     if(window.QRCode){ drawWithLib(); }
@@ -198,33 +211,34 @@ function renderQR(text){
   })();
 }
 
-/* Descargar PNG (funciona cuando hay canvas; si hubo fallback IMG, baja la imagen) */
+/* Descargar QR */
 function downloadPNG(){
-  const canvas=$('#qr canvas');
+  const canvas=document.querySelector('#qr canvas');
   if(canvas){
     const a=document.createElement('a');
     a.href=canvas.toDataURL('image/png');
     a.download='hoja-oficial-qr.png';
     a.click();
   }else{
-    const img=$('#qr img');
-    if(!img){ alert('Genera el QR primero.'); return; }
-    // Abre la imagen en nueva pestaña para “Guardar imagen”
-    window.open(img.src, '_blank');
+    const img=document.querySelector('#qr img');
+    if(img){ window.open(img.src, '_blank'); }
+    else{ alert('Genera el QR primero.'); }
   }
 }
 
-/* Generar */
-function generate(){ 
-  try{ const payload=buildPayload(); $('#payload').value=payload; renderQR(payload); }
-  catch(e){ alert(e.message); }
+function generate(){
+  try{
+    const payload=buildPayload();
+    document.querySelector('#payload').value=payload;
+    renderQR(payload);
+  }catch(e){ alert(e.message); }
 }
 
 /* Eventos */
-$('#rot-mas').addEventListener('click',e=>{e.preventDefault(); try{rotatePlus();}catch(err){alert(err.message);}});
-$('#rot-menos').addEventListener('click',e=>{e.preventDefault(); try{rotateMinus();}catch(err){alert(err.message);}});
-$('#btn-generar').addEventListener('click',e=>{e.preventDefault(); generate();});
-$('#btn-png').addEventListener('click',e=>{e.preventDefault(); downloadPNG();});
+document.querySelector('#rot-mas').addEventListener('click',e=>{e.preventDefault(); try{rotatePlus();}catch(err){alert(err.message);}}); 
+document.querySelector('#rot-menos').addEventListener('click',e=>{e.preventDefault(); try{rotateMinus();}catch(err){alert(err.message);}}); 
+document.querySelector('#btn-generar').addEventListener('click',e=>{e.preventDefault(); generate();});
+document.querySelector('#btn-png').addEventListener('click',e=>{e.preventDefault(); downloadPNG();});
 </script>
 </body>
 </html>
