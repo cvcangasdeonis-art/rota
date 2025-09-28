@@ -24,13 +24,11 @@ h1,h2{margin:.2rem 0 .6rem}
 .card h2{font-size:1.05rem;margin-top:0}
 .meta-grid{display:grid;grid-template-columns:1fr;gap:.8rem}
 .meta-grid input, .meta-grid select{padding:.9rem;border:1px solid var(--line);border-radius:.6rem;background:#0a1117;color:var(--text)}
-.side{display:flex;gap:1rem;border:1px dashed var(--line);padding:.6rem .8rem;border-radius:.6rem}
+.side, .servebox{display:flex;gap:1rem;border:1px dashed var(--line);padding:.6rem .8rem;border-radius:.6rem;flex-wrap:wrap}
 .pos-grid{display:flex;flex-direction:column;gap:.8rem;margin:1rem 0}
 .pos-row{display:grid;grid-template-columns:48px 1fr;gap:.6rem;align-items:center}
-.pos-row input{
-  text-align:center;font-size:1.35rem;padding:.6rem;border:2px solid var(--accent-dark);
-  border-radius:.6rem;background:var(--accent);color:#1e3a8a;font-weight:800
-}
+.pos-row input{ text-align:center;font-size:1.35rem;padding:.6rem;border:2px solid var(--accent-dark);
+  border-radius:.6rem;background:var(--accent);color:#1e3a8a;font-weight:800 }
 .row{display:flex;flex-direction:column;gap:.6rem;margin-top:.6rem}
 .btn{border:none;background:linear-gradient(180deg,#101826,#0b1320);color:var(--text);padding:1rem;border-radius:.9rem;cursor:pointer;width:100%;box-shadow:0 6px 14px rgba(0,0,0,.35);transition:transform .06s ease, box-shadow .2s ease}
 .btn:hover{transform:translateY(-1px); box-shadow:0 10px 20px rgba(0,0,0,.4)}
@@ -44,7 +42,10 @@ h1,h2{margin:.2rem 0 .6rem}
 .scan-result{background:#0e1620;border:1px solid var(--line);border-radius:.6rem;padding:.6rem;margin-top:.6rem;font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
 .site-footer{padding:1rem 0;border-top:1px solid var(--line)}
 .footer-grid{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem}
+.badge{display:inline-block;padding:.2rem .5rem;border-radius:.5rem;background:#0a1117;border:1px solid var(--line);font-size:.85rem}
 </style>
+
+<!-- QR libs -->
 <script id="qrcode-cdn-1" src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
 <script>
 window.addEventListener('load', function(){
@@ -55,6 +56,8 @@ window.addEventListener('load', function(){
   },150);
 });
 </script>
+
+<!-- Lector QR -->
 <script src="https://unpkg.com/html5-qrcode" defer></script>
 </head>
 <body>
@@ -63,29 +66,44 @@ window.addEventListener('load', function(){
 </header>
 
 <main class="container">
+  <!-- Meta -->
   <section class="card">
     <h2>Datos del set</h2>
     <form id="meta" class="meta-grid" onsubmit="return false;">
       <label>Código equipo
         <input type="text" id="equipo" placeholder="CANGAS" required>
       </label>
+
       <fieldset class="side">
-        <legend>Equipo</legend>
+        <legend>Lado</legend>
         <label><input type="radio" name="side" value="A" checked> A</label>
         <label><input type="radio" name="side" value="B"> B</label>
       </fieldset>
+
       <label>Set
         <select id="set">
           <option value="1">1</option><option value="2">2</option>
           <option value="3">3</option><option value="4">4</option><option value="5">5</option>
         </select>
       </label>
+
+      <fieldset class="servebox">
+        <legend>Posesión inicial</legend>
+        <label><input type="radio" name="serve" value="S" checked> Con saque</label>
+        <label><input type="radio" name="serve" value="R"> Sin saque (recepción)</label>
+        <span class="badge">Se guarda por set y posesión</span>
+      </fieldset>
     </form>
+
     <div class="row">
+      <button id="btn-save" class="btn btn-ok">Guardar en este set</button>
+      <button id="btn-copy-prev" class="btn">Copiar del set anterior</button>
+      <button id="btn-save-next" class="btn">Guardar como siguiente set</button>
       <button id="btn-reset" class="btn btn-danger">Borrar todo</button>
     </div>
   </section>
 
+  <!-- Posiciones -->
   <section class="card">
     <h2>Posiciones I – VI</h2>
     <p class="small">Introduce dorsales (solo números). (+) rota ZN1→ZN6.</p>
@@ -104,6 +122,7 @@ window.addEventListener('load', function(){
     </div>
   </section>
 
+  <!-- QR -->
   <section class="card">
     <h2>QR</h2>
     <div id="qr"></div>
@@ -112,6 +131,7 @@ window.addEventListener('load', function(){
     </div>
   </section>
 
+  <!-- Escaneo inverso -->
   <section class="card">
     <h2>Escanear QR (comprobar hoja)</h2>
     <div class="scan-box">
@@ -134,50 +154,186 @@ window.addEventListener('load', function(){
 <div id="toast" class="toast">✅ QR generado</div>
 
 <script>
+/* Utilidades DOM */
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];
 const yearEl=$('#year');if(yearEl) yearEl.textContent=new Date().getFullYear();
+
+/* Solo dígitos */
 function onlyDigits(e){e.target.value=e.target.value.replace(/\D+/g,'').slice(0,3);}
 ['#p1','#p2','#p3','#p4','#p5','#p6'].forEach(id=>{const el=$(id);el.addEventListener('input',onlyDigits);el.addEventListener('blur',onlyDigits);});
+
+/* Helpers */
 function getSide(){return document.querySelector('input[name="side"]:checked').value;}
-function getPositions(){const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value].map(x=>x.trim());const set=new Set(v.filter(x=>x!==''));if(set.size!==v.filter(x=>x!=='').length) throw new Error('No puedes repetir dorsales.');if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.');return v;}
+function getServe(){return document.querySelector('input[name="serve"]:checked').value;} // S o R
+function getSet(){return $('#set').value;}
+function keyFor(set=getSet(), serve=getServe()){ return `hojaQR:set:${set}:pos:${serve}`; }
+function keyMeta(set=getSet(), serve=getServe()){ return `hojaQR:meta:${set}:pos:${serve}`; }
+
+function getPositions(){
+  const v=[$('#p1').value,$('#p2').value,$('#p3').value,$('#p4').value,$('#p5').value,$('#p6').value].map(x=>x.trim());
+  const set=new Set(v.filter(x=>x!==''));
+  if(set.size!==v.filter(x=>x!=='').length) throw new Error('No puedes repetir dorsales.');
+  if(v.some(x=>x==='')) throw new Error('Completa las 6 posiciones.');
+  return v;
+}
 function setPositions(vals){[$('#p1'),$('#p2'),$('#p3'),$('#p4'),$('#p5'),$('#p6')].forEach((el,i)=>el.value=vals[i]??'');}
-function rotatePlus(){const v=getPositions();setPositions([v[1],v[2],v[3],v[4],v[5],v[0]]);}
-function rotateMinus(){const v=getPositions();setPositions([v[5],v[0],v[1],v[2],v[3],v[4]]);}
-function resetAll(){$('#equipo').value='';$$('input[name="side"]').forEach(r=>r.checked=(r.value==='A'));$('#set').value='1';setPositions(['','','','','','']);$('#qr').innerHTML='';toast('Campos borrados');}
-function buildPayload(){const equipo=$('#equipo').value.trim();if(!equipo) throw new Error('Introduce el código de equipo.');const side=getSide();const set=$('#set').value;const v=getPositions();const zones={ZN1:v[0],ZN2:v[1],ZN3:v[2],ZN4:v[3],ZN5:v[4],ZN6:v[5]};return JSON.stringify([equipo,side,JSON.stringify(zones),set]);}
-function renderQR(text){const el=$('#qr');el.innerHTML='';function drawWithLib(){const canvas=document.createElement('canvas');try{window.QRCode.toCanvas(canvas,text,{width:300,margin:1},e=>{if(e){console.error(e);drawFallback();}});el.appendChild(canvas);}catch(err){drawFallback();}}function drawFallback(){const img=document.createElement('img');img.alt='QR';img.width=300;img.height=300;img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(text);el.appendChild(img);}let tries=0;(function waitForLib(){if(window.QRCode){drawWithLib();}else if(tries++<20){setTimeout(waitForLib,100);}else{drawFallback();}})();}
-function downloadPNG(){const canvas=document.querySelector('#qr canvas');if(canvas){const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='hoja-oficial-qr.png';a.click();}else{const img=document.querySelector('#qr img');if(img){window.open(img.src,'_blank');}else{alert('Genera el QR primero.');}}}
-function toast(msg){const t=$('#toast');t.textContent='✅ '+msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
-function generate(){try{renderQR(buildPayload());toast('QR generado');}catch(e){alert(e.message);}}
+
+/* Rotaciones (+: ZN1 -> ZN6) */
+function rotatePlus(){const v=getPositions(); setPositions([v[1],v[2],v[3],v[4],v[5],v[0]]);}
+function rotateMinus(){const v=getPositions(); setPositions([v[5],v[0],v[1],v[2],v[3],v[4]]);}
+
+/* Reset */
+function resetAll(){
+  $('#equipo').value=''; $$('input[name="side"]').forEach(r=>r.checked=(r.value==='A'));
+  $('#set').value='1'; $$('input[name="serve"]').forEach(r=>r.checked=(r.value==='S'));
+  setPositions(['','','','','','']); $('#qr').innerHTML=''; toast('Campos borrados');
+}
+
+/* Guardar / Cargar por set y posesión */
+function saveCurrent(set=getSet(), serve=getServe()){
+  const equipo=$('#equipo').value.trim(); if(!equipo){ toast('Pon el código de equipo'); return; }
+  const side=getSide(); let vals;
+  try{ vals=getPositions(); }catch(e){ alert(e.message); return; }
+  localStorage.setItem(keyFor(set,serve), JSON.stringify(vals));
+  localStorage.setItem(keyMeta(set,serve), JSON.stringify({equipo, side}));
+  toast(`Guardado set ${set} (${serve==="S"?"Saque":"Recepción"})`);
+}
+function loadCurrent(set=getSet(), serve=getServe(), showToast=true){
+  const v = localStorage.getItem(keyFor(set,serve));
+  const m = localStorage.getItem(keyMeta(set,serve));
+  if(v){
+    try{
+      setPositions(JSON.parse(v));
+      if(m){
+        const meta=JSON.parse(m);
+        $('#equipo').value = meta.equipo||'';
+        $$('input[name="side"]').forEach(r=>r.checked = (r.value===(meta.side||'A')));
+      }
+      if(showToast) toast(`Cargado set ${set} (${serve==="S"?"Saque":"Recepción"})`);
+      return true;
+    }catch{}
+  }
+  return false;
+}
+
+/* Copiar del set anterior (misma posesión) */
+function copyPrev(){
+  const setNum=parseInt(getSet(),10);
+  if(setNum<=1){ toast('No hay set anterior'); return; }
+  const prev=setNum-1, serve=getServe();
+  if(loadCurrent(String(prev), serve, false)){
+    // Si cargó, re-guardar en el set actual para fijarlo
+    saveCurrent(String(setNum), serve);
+    toast(`Copiado del set ${prev} (${serve==="S"?"Saque":"Recepción"})`);
+  }else{
+    toast(`No había datos en set ${prev} (${serve==="S"?"Saque":"Recepción"})`);
+  }
+}
+
+/* Guardar como siguiente set (misma posesión) */
+function saveNext(){
+  const setNum=parseInt(getSet(),10);
+  if(setNum>=5){ toast('No hay siguiente set'); return; }
+  const next=String(setNum+1), serve=getServe();
+  const equipo=$('#equipo').value.trim(); if(!equipo){ toast('Pon el código de equipo'); return; }
+  const side=getSide(); let vals;
+  try{ vals=getPositions(); }catch(e){ alert(e.message); return; }
+  localStorage.setItem(keyFor(next,serve), JSON.stringify(vals));
+  localStorage.setItem(keyMeta(next,serve), JSON.stringify({equipo, side}));
+  toast(`Guardado como base del set ${next} (${serve==="S"?"Saque":"Recepción"})`);
+}
+
+/* Auto-guardar al generar */
+function buildPayload(){
+  const equipo=$('#equipo').value.trim(); if(!equipo) throw new Error('Introduce el código de equipo.');
+  const side=getSide(); const set=$('#set').value; const v=getPositions();
+  const zones={ZN1:v[0],ZN2:v[1],ZN3:v[2],ZN4:v[3],ZN5:v[4],ZN6:v[5]};
+  // Guarda automático en el set/posesión actual
+  localStorage.setItem(keyFor(set,getServe()), JSON.stringify(v));
+  localStorage.setItem(keyMeta(set,getServe()), JSON.stringify({equipo, side}));
+  return JSON.stringify([equipo,side,JSON.stringify(zones),set]);
+}
+
+/* QR (con fallback) */
+function renderQR(text){
+  const el=$('#qr'); el.innerHTML='';
+  function drawWithLib(){
+    const canvas=document.createElement('canvas');
+    try{
+      window.QRCode.toCanvas(canvas,text,{width:300,margin:1},e=>{
+        if(e){ console.error(e); drawFallback(); }
+      });
+      el.appendChild(canvas);
+    }catch(err){ drawFallback(); }
+  }
+  function drawFallback(){
+    const img=document.createElement('img'); img.alt='QR'; img.width=300; img.height=300;
+    img.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(text);
+    el.appendChild(img);
+  }
+  let tries=0; (function waitForLib(){ if(window.QRCode){ drawWithLib(); }
+    else if(tries++<20){ setTimeout(waitForLib,100); } else { drawFallback(); }})();
+}
+
+/* Descargar PNG */
+function downloadPNG(){
+  const canvas=document.querySelector('#qr canvas');
+  if(canvas){
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download='hoja-oficial-qr.png'; a.click();
+  }else{
+    const img=document.querySelector('#qr img'); if(img){ window.open(img.src,'_blank'); } else{ alert('Genera el QR primero.'); }
+  }
+}
+
+/* Toast */
+function toast(msg){ const t=$('#toast'); t.textContent='✅ '+msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* Generar */
+function generate(){ try{ renderQR(buildPayload()); toast('QR generado'); }catch(e){ alert(e.message); }}
+
+/* ====== Escaneo inverso ====== */
 let html5QrcodeObj=null;
 async function startScan(){
-  if(!window.Html5Qrcode){alert('Cargando cámara… inténtalo en 1–2 s.');return;}
-  if(html5QrcodeObj){return;}
-  html5QrcodeObj=new Html5Qrcode("reader");
+  if(!window.Html5Qrcode){ alert('Cargando cámara… inténtalo en 1–2 s.'); return; }
+  if(html5QrcodeObj){ return; }
+  html5QrcodeObj = new Html5Qrcode("reader");
   try{
     await html5QrcodeObj.start(
       { facingMode:"environment" },
-      { fps:10, qrbox:{width:250,height:250} },
+      { fps:10, qrbox:{ width:250, height:250 } },
       onScanSuccess, ()=>{}
     );
   }catch(e){
     try{
       const cameras=await Html5Qrcode.getCameras();
-      const camId=cameras && cameras.length ? cameras[0].id:null;
-      if(!camId){alert('No se encontró cámara.');html5QrcodeObj=null;return;}
-      await html5QrcodeObj.start(camId,{ fps:10,qrbox:{width:250,height:250} },onScanSuccess,()=>{});
-    }catch(err){alert('No se pudo iniciar la cámara: '+err);html5QrcodeObj=null;}
+      const camId=cameras && cameras.length ? cameras[0].id : null;
+      if(!camId){ alert('No se encontró cámara.'); html5QrcodeObj=null; return; }
+      await html5QrcodeObj.start(camId,{ fps:10, qrbox:{ width:250, height:250 } }, onScanSuccess, ()=>{});
+    }catch(err){ alert('No se pudo iniciar la cámara: '+err); html5QrcodeObj=null; }
   }
 }
-function stopScan(){if(html5QrcodeObj){html5QrcodeObj.stop().then(()=>{html5QrcodeObj.clear();html5QrcodeObj=null;}).catch(()=>{});}}
-function onScanSuccess(decodedText){let out=$('#scan-out');out.style.display='block';try{const arr=JSON.parse(decodedText);const equipo=arr[0],side=arr[1],set=arr[3];const zones=JSON.parse(arr[2]);out.innerHTML=`<strong>Equipo:</strong> ${equipo}<br><strong>Lado:</strong> ${side}<br><strong>Set:</strong> ${set}<br><strong>ZN1..ZN6:</strong> ${zones.ZN1}, ${zones.ZN2}, ${zones.ZN3}, ${zones.ZN4}, ${zones.ZN5}, ${zones.ZN6}`;}catch(e){out.textContent='Formato no reconocido: '+decodedText;}}
-$('#rot-mas').addEventListener('click',e=>{e.preventDefault();try{rotatePlus();}catch(err){alert(err.message);}});
-$('#rot-menos').addEventListener('click',e=>{e.preventDefault();try{rotateMinus();}catch(err){alert(err.message);}});
-$('#btn-generar').addEventListener('click',e=>{e.preventDefault();generate();});
-$('#btn-png').addEventListener('click',e=>{e.preventDefault();downloadPNG();});
-$('#btn-reset').addEventListener('click',e=>{e.preventDefault();resetAll();});
-$('#scan-start').addEventListener('click',e=>{e.preventDefault();startScan();});
-$('#scan-stop').addEventListener('click',e=>{e.preventDefault();stopScan();});
-</script>
-</body>
-</html>
+function stopScan(){ if(html5QrcodeObj){ html5QrcodeObj.stop().then(()=>{ html5QrcodeObj.clear(); html5QrcodeObj=null; }).catch(()=>{}); } }
+function onScanSuccess(decodedText){
+  let out=$('#scan-out'); out.style.display='block';
+  try{
+    const arr=JSON.parse(decodedText);
+    const equipo=arr[0], side=arr[1], set=arr[3];
+    const zones=JSON.parse(arr[2]);
+    out.innerHTML = `<strong>Equipo:</strong> ${equipo}<br><strong>Lado:</strong> ${side}<br><strong>Set:</strong> ${set}<br><strong>ZN1..ZN6:</strong> ${zones.ZN1}, ${zones.ZN2}, ${zones.ZN3}, ${zones.ZN4}, ${zones.ZN5}, ${zones.ZN6}`;
+  }catch(e){ out.textContent='Formato no reconocido: '+decodedText; }
+}
+
+/* Eventos UI */
+$('#rot-mas').addEventListener('click',e=>{e.preventDefault(); try{rotatePlus();}catch(err){alert(err.message);}});
+$('#rot-menos').addEventListener('click',e=>{e.preventDefault(); try{rotateMinus();}catch(err){alert(err.message);}});
+$('#btn-generar').addEventListener('click',e=>{e.preventDefault(); generate();});
+$('#btn-png').addEventListener('click',e=>{e.preventDefault(); downloadPNG();});
+$('#btn-reset').addEventListener('click',e=>{e.preventDefault(); resetAll();});
+$('#btn-save').addEventListener('click',e=>{e.preventDefault(); saveCurrent();});
+$('#btn-copy-prev').addEventListener('click',e=>{e.preventDefault(); copyPrev();});
+$('#btn-save-next').addEventListener('click',e=>{e.preventDefault(); saveNext();});
+$('#scan-start').addEventListener('click',e=>{e.preventDefault(); startScan();});
+$('#scan-stop').addEventListener('click',e=>{e.preventDefault(); stopScan();});
+
+/* Reacciones a cambios de set/posesión: intentar cargar guardado */
+$('#set').addEventListener('change', ()=>{ if(!loadCurrent()) { setPositions(['',]()
